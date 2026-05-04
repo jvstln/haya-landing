@@ -1,0 +1,77 @@
+"use client";
+import type { Loader2 } from "lucide-react";
+import { cn } from "../lib/utils";
+import { Logo } from "@workspace/assets/logo";
+import logo from "@workspace/assets/logo-icon.svg";
+
+function Spinner({
+  className,
+  ...props
+}: React.ComponentProps<typeof Loader2>) {
+  return (
+    <Logo
+      aria-live="polite"
+      aria-label="Loading"
+      className={cn(
+        "pointer-events-none size-4 animate-[spin_2s_linear_infinite]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function HayaSpinner({
+  classNames,
+}: {
+  classNames?: Partial<Record<"root" | "spinner", string>>;
+}) {
+  return (
+    <output
+      aria-live="polite"
+      aria-busy="true"
+      className={cn(
+        "relative grid size-18 place-content-center",
+        classNames?.root,
+      )}
+      data-slot="loader"
+    >
+      {/* <div
+        className="absolute inset-0"
+        style={{
+          mask: "radial-gradient(transparent 20%, #000 20%)",
+        }}
+      >
+        <motion.div
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 size-2 rounded-full bg-primary"
+          animate={{
+            y: [0, -25, null, 0],
+            rotate: [0, null, 360, 360],
+            backgroundColor: [
+              "var(--color-primary)",
+              "var(--color-primary)",
+              "var(--color-primary-compliment)",
+              "var(--color-primary-compliment)",
+            ],
+          }}
+          style={{ originY: "calc(100% + 20px)" }}
+          transition={{
+            repeat: Number.POSITIVE_INFINITY,
+            duration: 2.5,
+            delay: 0.001,
+            ease: "easeInOut",
+            times: [0, 0.3, 0.5, 0.7, 1],
+          }}
+        />
+      </div> */}
+      <img
+        src={logo}
+        alt="Haya Loader"
+        className={cn("size-12 animate-spin", classNames?.spinner)}
+        style={{ animationDuration: "3s" }}
+      />
+    </output>
+  );
+}
+
+export { Spinner, HayaSpinner };
