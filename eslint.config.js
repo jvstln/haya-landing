@@ -1,4 +1,12 @@
-import { nextJsConfig } from "@workspace/eslint-config/next-js"
+import { FlatCompat } from "@eslint/eslintrc";
 
-/** @type {import("eslint").Linter.Config} */
-export default nextJsConfig
+const compat = new FlatCompat({
+  baseDirectory: import.meta.dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+];
+
+export default eslintConfig;
+

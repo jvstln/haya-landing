@@ -1,0 +1,21 @@
+[6n[m]0;C:\Windows\system32\cmd.exe[?25h[?25l
+> landing@0.0.1 build C:\repos\haya\apps\landing
+> next build[5;1H[?25h[33m[1m⚠[m `eslint` configuration in next.config.mjs is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options[33m[1m
+⚠[m Invalid next.config.mjs options detected: [33m[1m
+⚠[m     Unrecognized key(s) in object: 'eslint'[33m[1m
+⚠[m See more info here: https://nextjs.org/docs/messages/invalid-next-config
+[?25l[38;2;173;127;168m[1m▲ Next.js 16.2.4[m (Turbopack)[12;1H[?25h[37m[1m [m Creating an optimized production build ...
+[32m[1m✓[m Compiled successfully in 8.3s
+[37m[1m [m Skipping validation of types
+[37m[1m [m Finished TypeScript config validation in 28ms  [36m.[?25l[m[32m[1m✓[m Finished TypeScript config validation in 28ms[K[?25h
+[?25l[100C[37m[1m [m Collecting page data using 3 workers  [36m.[m[K[100C[37m[1m [m Collecting page data using 3 workers  [36m..[m[K[100C[37m[1m [m Collecting page data using 3 workers  [36m...[m[K[100C[37m[1m [m Collecting page data using 3 workers  [36m.[m[37m[1m [m Collecting page data using 3 workers  [36m..[K[58C[m[K[100C[37m[1m [m Collecting page data using 3 workers  [36m...[m[37m[1m [m Collecting page data using 3 workers  [36m.[K[59C[m[37m[1m [m Collecting page data using 3 workers  [36m..[K[58C[m[32m[1m✓[m Collecting page data using 3 workers in 1693ms[K[?25h
+[37m[1m [m Generating static pages using 3 workers (0/3)  [36m[    ][?25l[m[37m[1m [m Generating static pages using 3 workers (0/3)  [36m[=   ][K[45C[m[K[100C[37m[1m [m Generating static pages using 3 workers (0/3)  [36m[==  ][m[32m[1m✓[m Generating static pages using 3 workers (3/3) in 508ms[K[?25h
+[37m[1m [m Finalizing page optimization  [36m.[K[?25l[67C[m[32m[1m✓[m Finalizing page optimization in 12ms[K[?25h
+
+[4mRoute (app)[24m
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
