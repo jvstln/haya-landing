@@ -66,16 +66,40 @@ export function useAudioPlayer() {
             // Attempt to start - will be suspended by browser initially
             ctrl.start();
 
-            // Add a one-time global click listener to unlock AudioContext
+            // Try resuming immediately (works if browser policy allows it)
+            if (ctx?.state === "suspended") {
+              ctx.resume().catch(() => {});
+            }
+
+            // Listen for the earliest possible user interaction to unlock audio.
+            // mousemove/scroll/keydown fire before a deliberate click, so audio
+            // starts the instant the user interacts with the page at all.
+            const unlockEvents = [
+              "click",
+              "touchstart",
+              "pointerdown",
+              "mousemove",
+              "scroll",
+              "keydown",
+            ] as const;
+
             const unlock = async () => {
               if (ctx?.state === "suspended") {
                 await ctx.resume();
               }
-              window.removeEventListener("click", unlock);
-              window.removeEventListener("touchstart", unlock);
+              // If the controller was created but never actually started
+              // (can happen on some mobile browsers), start it now.
+              if (globalIsPlaying && ctrl) {
+                ctrl.start();
+              }
+              unlockEvents.forEach((evt) =>
+                window.removeEventListener(evt, unlock),
+              );
             };
-            window.addEventListener("click", unlock);
-            window.addEventListener("touchstart", unlock);
+
+            unlockEvents.forEach((evt) =>
+              window.addEventListener(evt, unlock, { once: true }),
+            );
           } catch (e) {
             console.warn("Autoplay blocked:", e);
           }
