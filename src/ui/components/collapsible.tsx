@@ -5,36 +5,36 @@ import type * as React from "react";
 import { cn } from "../lib/utils";
 
 function Collapsible({
-  ...props
+	...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
+	return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
 }
 
 function CollapsibleTrigger({
-  ...props
+	...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>) {
-  return (
-    <CollapsiblePrimitive.CollapsibleTrigger
-      data-slot="collapsible-trigger"
-      {...props}
-    />
-  );
+	return (
+		<CollapsiblePrimitive.CollapsibleTrigger
+			data-slot="collapsible-trigger"
+			{...props}
+		/>
+	);
 }
 
 function CollapsibleContent({
-  className,
-  ...props
+	className,
+	...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>) {
-  return (
-    <CollapsiblePrimitive.CollapsibleContent
-      data-slot="collapsible-content"
-      className={cn(
-        "data-[state=close]:animate-collapsible-up data-[state=open]:animate-collapsible-down",
-        className,
-      )}
-      {...props}
-    />
-  );
+	return (
+		<CollapsiblePrimitive.CollapsibleContent
+			data-slot="collapsible-content"
+			className={cn(
+				"data-[state=close]:animate-collapsible-up data-[state=open]:animate-collapsible-down",
+				className,
+			)}
+			{...props}
+		/>
+	);
 }
 
-export { Collapsible, CollapsibleTrigger, CollapsibleContent };
+export { Collapsible, CollapsibleContent, CollapsibleTrigger };

@@ -1,32 +1,33 @@
+import type { Metadata } from "next";
 import { HomePage } from "@/components/home-page";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Haya | AI-Powered Behavioral Audit & Funnel Optimization",
-  description:
-    "See the friction, fix the funnel. Haya AI automatically identifies conversion blockers and behavioral friction points on your website or app in minutes.",
-  keywords: [
-    "AI audit",
-    "behavioral audit",
-    "funnel optimization",
-    "UX design",
-    "conversion rate optimization",
-    "CRO",
-  ],
-  authors: [{ name: "Haya Team" }],
-  openGraph: {
-    title: "Haya | AI-Powered Behavioral Audit",
-    description:
-      "Automatically identify and fix friction points in your user journey.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Haya | AI-Powered Behavioral Audit",
-    description: "Identify friction points in your funnel automatically.",
-  },
+	title: "Haya | Behavioral Anticipation Platform for SaaS & Web3",
+	description:
+		"Haya's agents run silently inside your product tracking every hesitation, loop, and abandonment signal across every session. Real behavioral personas. Real friction intelligence. No surveys needed.",
+	keywords: [
+		"AI audit",
+		"behavioral audit",
+		"funnel optimization",
+		"UX design",
+		"conversion rate optimization",
+		"CRO",
+	],
+	authors: [{ name: "Haya Team" }],
+	openGraph: {
+		title: "Haya | The Behavioral Anticipation Platform",
+		description:
+			"Haya watches how your users actually move inside your product, builds behavioral personas from what it sees, and anticipates where friction will cost you revenue — before it does.",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "Haya | The Behavioral Anticipation Platform",
+		description:
+			"Haya watches how your users actually move inside your product, builds behavioral personas from what it sees, and anticipates where friction will cost you revenue — before it does.",
+	},
 };
 
 export default function Home() {
-  return <HomePage />;
+	return <HomePage />;
 }

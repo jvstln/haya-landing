@@ -1,42 +1,43 @@
 "use client";
+import { Logo } from "@workspace/assets/logo";
 import type { Loader2 } from "lucide-react";
 import { cn } from "../lib/utils";
-import { Logo } from "@workspace/assets/logo";
-import logo from "@workspace/assets/logo-icon.svg";
+
+// import logo from "@workspace/assets/logo-icon.svg";
 
 function Spinner({
-  className,
-  ...props
+	className,
+	...props
 }: React.ComponentProps<typeof Loader2>) {
-  return (
-    <Logo
-      aria-live="polite"
-      aria-label="Loading"
-      className={cn(
-        "pointer-events-none size-4 animate-[spin_2s_linear_infinite]",
-        className,
-      )}
-      {...props}
-    />
-  );
+	return (
+		<Logo
+			aria-live="polite"
+			aria-label="Loading"
+			className={cn(
+				"pointer-events-none size-4 animate-[spin_2s_linear_infinite]",
+				className,
+			)}
+			{...props}
+		/>
+	);
 }
 
 function HayaSpinner({
-  classNames,
+	classNames,
 }: {
-  classNames?: Partial<Record<"root" | "spinner", string>>;
+	classNames?: Partial<Record<"root" | "spinner", string>>;
 }) {
-  return (
-    <output
-      aria-live="polite"
-      aria-busy="true"
-      className={cn(
-        "relative grid size-18 place-content-center",
-        classNames?.root,
-      )}
-      data-slot="loader"
-    >
-      {/* <div
+	return (
+		<output
+			aria-live="polite"
+			aria-busy="true"
+			className={cn(
+				"relative grid size-18 place-content-center",
+				classNames?.root,
+			)}
+			data-slot="loader"
+		>
+			{/* <div
         className="absolute inset-0"
         style={{
           mask: "radial-gradient(transparent 20%, #000 20%)",
@@ -64,14 +65,15 @@ function HayaSpinner({
           }}
         />
       </div> */}
-      <img
+			{/* <img
         src={logo}
         alt="Haya Loader"
         className={cn("size-12 animate-spin", classNames?.spinner)}
         style={{ animationDuration: "3s" }}
-      />
-    </output>
-  );
+      /> */}
+			<Logo />
+		</output>
+	);
 }
 
-export { Spinner, HayaSpinner };
+export { HayaSpinner, Spinner };

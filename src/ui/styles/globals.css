@@ -77,50 +77,50 @@
 }
 
 :root {
-  --background: oklch(from #121212 l c h);
-  --foreground: oklch(from var(--color-white) l c h);
-  --primary: oklch(60.795% 0.2218 284.387);
-  --primary-foreground: var(--color-white);
-  --primary-compliment: oklch(from #ffafa4 l c h);
+	--background: oklch(from #121212 l c h);
+	--foreground: oklch(from var(--color-white) l c h);
+	--primary: oklch(60.795% 0.2218 284.387);
+	--primary-foreground: var(--color-white);
+	--primary-compliment: oklch(from #ffafa4 l c h);
 
-  --secondary: oklch(from #333333 l c h);
-  --secondary-foreground: var(--color-white);
+	--secondary: oklch(from #333333 l c h);
+	--secondary-foreground: var(--color-white);
 
-  --muted: oklch(from #1e1e1e l c h);
-  --muted-foreground: oklch(from #a3a3a4 l c h);
+	--muted: oklch(from #1e1e1e l c h);
+	--muted-foreground: oklch(from #a3a3a4 l c h);
 
-  --border: oklch(from #141818 l c h);
-  --ring: var(--border);
-  --input: var(--secondary);
+	--border: oklch(from #141818 l c h);
+	--ring: var(--border);
+	--input: var(--secondary);
 
-  --accent: var(--border);
-  --accent-foreground: var(--primary-foreground);
-  --destructive: oklch(60% 0.2 25);
-  --success: oklch(60% 0.2 140);
-  --cyan: oklch(from #00c0e8 l c h);
+	--accent: var(--border);
+	--accent-foreground: var(--primary-foreground);
+	--destructive: oklch(60% 0.2 25);
+	--success: oklch(60% 0.2 140);
+	--cyan: oklch(from #00c0e8 l c h);
 
-  --card: oklch(from #303131 l c h);
-  --card-foreground: var(--foreground);
-  --popover: var(--background);
-  --popover-foreground: var(--foreground);
+	--card: oklch(from #303131 l c h);
+	--card-foreground: var(--foreground);
+	--popover: var(--background);
+	--popover-foreground: var(--foreground);
 
-  --sidebar: var(--muted);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--border);
-  --sidebar-accent-foreground: var(--color-white);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
+	--sidebar: var(--muted);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-accent: var(--border);
+	--sidebar-accent-foreground: var(--color-white);
+	--sidebar-border: var(--border);
+	--sidebar-ring: var(--ring);
 
-  --colorful-gradient: linear-gradient(
-    261.15deg,
-    var(--primary-compliment) -29.14%,
-    var(--primary) 99.41%
-  );
+	--colorful-gradient: linear-gradient(
+		261.15deg,
+		var(--primary-compliment) -29.14%,
+		var(--primary) 99.41%
+	);
 
-  --radius: 0.625rem;
-  /* 
+	--radius: 0.625rem;
+	/* 
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -168,52 +168,52 @@
 } */
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+	* {
+		@apply border-border outline-ring/50;
+	}
 
-  :is(button, [role="button"], [role="menuitem"]):not(:disabled) {
-    @apply cursor-pointer;
-  }
+	:is(button, [role="button"], [role="menuitem"]):not(:disabled) {
+		@apply cursor-pointer;
+	}
 }
 
 @layer components {
-  .link {
-    @apply text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary;
-  }
-  /* Animated border glow effect */
-  .animate-border-glow {
-    @apply relative overflow-hidden z-0;
-  }
+	.link {
+		@apply text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary;
+	}
+	/* Animated border glow effect */
+	.animate-border-glow {
+		@apply relative overflow-hidden z-0;
+	}
 
-  .animate-border-glow::before {
-    @apply absolute w-16 content-[''] pointer-events-none h-full left-0 top-0 bg-linear-to-r from-transparent via-white to-transparent -z-2;
+	.animate-border-glow::before {
+		@apply absolute w-16 content-[''] pointer-events-none h-full left-0 top-0 bg-linear-to-r from-transparent via-white to-transparent -z-2;
 
-    offset-path: border-box;
-    offset-anchor: 100% 50%; /* Front of the beam leads */
-    animation: border-beam 3s linear infinite;
-  }
+		offset-path: border-box;
+		offset-anchor: 100% 50%; /* Front of the beam leads */
+		animation: border-beam 3s linear infinite;
+	}
 
-  @keyframes border-beam {
-    0% {
-      opacity: 0.2;
-    }
-    50% {
-      width: 20%;
-      opacity: 1;
-    }
-    100% {
-      offset-distance: 100%;
-      opacity: 0.2;
-    }
-  }
+	@keyframes border-beam {
+		0% {
+			opacity: 0.2;
+		}
+		50% {
+			width: 20%;
+			opacity: 1;
+		}
+		100% {
+			offset-distance: 100%;
+			opacity: 0.2;
+		}
+	}
 
-  .animate-border-glow::after {
-    @apply absolute inset-0.5 -z-1 content-[''] bg-inherit rounded-[inherit];
-  }
+	.animate-border-glow::after {
+		@apply absolute inset-0.5 -z-1 content-[''] bg-inherit rounded-[inherit];
+	}
 
-  /* ============ GSAP Utilities ============ */
-  .gsap-reveal {
-    visibility: hidden;
-  }
+	/* ============ GSAP Utilities ============ */
+	.gsap-reveal {
+		visibility: hidden;
+	}
 }
