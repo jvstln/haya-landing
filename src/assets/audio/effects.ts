@@ -1,396 +1,322 @@
-/**
- * Haya Soundscape Effects
- * Extracted from haya-soundscape.html
- */
-
-export interface SoundscapeState {
-	breath: boolean;
-	owl: boolean;
-	crystal: boolean;
-	wind: boolean;
+export interface AudioController {
+	play: () => void;
+	pause: () => void;
+	onPause: (cb: (paused: boolean) => void) => () => void;
+	paused: boolean;
+	ctx: AudioContext | null;
 }
 
-export interface SoundscapeController {
-	start: () => void;
-	stop: () => void;
-	setVolume: (volume: number) => void;
-	toggleLayer: (name: keyof SoundscapeState, enabled: boolean) => void;
-	getAnalyser: () => AnalyserNode | null;
-}
+type Timer = ReturnType<typeof setTimeout> | null;
 
-export function createHayaSoundscape(ctx: AudioContext): SoundscapeController {
+export function audioEffectPlayer(ctx?: AudioContext): AudioController {
+	let activeCtx: AudioContext | null = ctx ?? null;
 	let master: GainNode | null = null;
-	let analyser: AnalyserNode | null = null;
 	let playing = false;
 
-	let owlTimer: any = null;
-	let crystalTimer: any = null;
+	let owlTimer: Timer = null;
+	let crystalTimer: Timer = null;
 
-	const state: SoundscapeState = {
-		breath: true,
-		owl: true,
-		crystal: true,
-		wind: true,
-	};
+	const nodes: { stop?: (time?: number) => void; disconnect?: () => void }[] =
+		[];
 
-	const nodes: Record<
-		string,
-		{
-			gain: GainNode;
-			oscs?: (OscillatorNode | GainNode)[];
-			src?: AudioBufferSourceNode;
-		}
-	> = {};
+	const listeners = new Set<(paused: boolean) => void>();
+	const notify = (paused: boolean) =>
+		listeners.forEach((l) => {
+			l(paused);
+		});
 
 	function mkRev(dur: number, dec: number) {
-		const len = ctx.sampleRate * dur;
-		const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+		if (!activeCtx) throw new Error("AudioContext is not initialized");
+		const len = activeCtx.sampleRate * dur;
+		const buf = activeCtx.createBuffer(2, len, activeCtx.sampleRate);
 		for (let c = 0; c < 2; c++) {
 			const d = buf.getChannelData(c);
 			for (let i = 0; i < len; i++)
 				d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** dec;
 		}
-		const cv = ctx.createConvolver();
+		const cv = activeCtx.createConvolver();
 		cv.buffer = buf;
 		return cv;
 	}
 
-	function makeBreath() {
-		if (!master) return;
-		const g = ctx.createGain();
-		g.gain.setValueAtTime(0, ctx.currentTime);
-		const rev = mkRev(5, 1.8);
-		const rG = ctx.createGain();
-		rG.gain.setValueAtTime(0.65, ctx.currentTime);
+	function startAudio() {
+		if (!activeCtx || !playing) return;
+
+		master = activeCtx.createGain();
+		master.gain.setValueAtTime(0, activeCtx.currentTime);
+		master.connect(activeCtx.destination);
+		master.gain.linearRampToValueAtTime(0.65, activeCtx.currentTime + 5);
+
+		// --- Breath ---
+		const gBreath = activeCtx.createGain();
+		gBreath.gain.setValueAtTime(0, activeCtx.currentTime);
+		const revBreath = mkRev(5, 1.8);
+		const rGBreath = activeCtx.createGain();
+		rGBreath.gain.setValueAtTime(0.65, activeCtx.currentTime);
 
 		const chord = [110, 138.6, 165, 220, 261.6, 277.2, 330];
 		const vols = [0.55, 0.32, 0.42, 0.28, 0.2, 0.15, 0.1];
 
-		const oscs: (OscillatorNode | GainNode)[] = [];
-
 		chord.forEach((f, i) => {
-			const o = ctx.createOscillator();
+			if (!activeCtx) return;
+			const o = activeCtx.createOscillator();
 			o.type = "sine";
 			o.frequency.setValueAtTime(
 				f * (1 + Math.random() * 0.002),
-				ctx.currentTime,
+				activeCtx.currentTime,
 			);
 
-			const og = ctx.createGain();
-			og.gain.setValueAtTime(vols[i], ctx.currentTime);
+			const og = activeCtx.createGain();
+			og.gain.setValueAtTime(vols[i], activeCtx.currentTime);
 
-			const lfo = ctx.createOscillator();
+			const lfo = activeCtx.createOscillator();
 			lfo.type = "sine";
-			lfo.frequency.setValueAtTime(0.055 + i * 0.012, ctx.currentTime);
+			lfo.frequency.setValueAtTime(0.055 + i * 0.012, activeCtx.currentTime);
 
-			const lG = ctx.createGain();
-			lG.gain.setValueAtTime(f * 0.003, ctx.currentTime);
+			const lG = activeCtx.createGain();
+			lG.gain.setValueAtTime(f * 0.003, activeCtx.currentTime);
 
 			lfo.connect(lG);
 			lG.connect(o.frequency);
 			o.connect(og);
-			og.connect(g);
+			og.connect(gBreath);
 
 			o.start();
 			lfo.start();
-
-			oscs.push(o, lfo, og, lG);
+			nodes.push(o, lfo);
 		});
 
-		const bLFO = ctx.createOscillator();
+		const bLFO = activeCtx.createOscillator();
 		bLFO.type = "sine";
-		bLFO.frequency.setValueAtTime(1 / 7, ctx.currentTime);
-		const blG = ctx.createGain();
-		blG.gain.setValueAtTime(0.16, ctx.currentTime);
+		bLFO.frequency.setValueAtTime(1 / 7, activeCtx.currentTime);
+		const blG = activeCtx.createGain();
+		blG.gain.setValueAtTime(0.16, activeCtx.currentTime);
 		bLFO.connect(blG);
-		blG.connect(g.gain);
+		blG.connect(gBreath.gain);
 		bLFO.start();
+		nodes.push(bLFO);
 
-		oscs.push(bLFO, blG);
-
-		const filt = ctx.createBiquadFilter();
+		const filt = activeCtx.createBiquadFilter();
 		filt.type = "lowpass";
-		filt.frequency.setValueAtTime(850, ctx.currentTime);
+		filt.frequency.setValueAtTime(850, activeCtx.currentTime);
 
-		g.connect(filt);
-		filt.connect(rev);
-		rev.connect(rG);
-		rG.connect(master);
+		gBreath.connect(filt);
+		filt.connect(revBreath);
+		revBreath.connect(rGBreath);
+		rGBreath.connect(master);
 		filt.connect(master);
 
-		g.gain.linearRampToValueAtTime(state.breath ? 0.2 : 0, ctx.currentTime + 7);
+		gBreath.gain.linearRampToValueAtTime(0.2, activeCtx.currentTime + 7);
 
-		nodes.breath = { gain: g, oscs };
-	}
+		// --- Wind ---
+		const gWind = activeCtx.createGain();
+		gWind.gain.setValueAtTime(0, activeCtx.currentTime);
+		const wLen = activeCtx.sampleRate * 4;
+		const wBuf = activeCtx.createBuffer(1, wLen, activeCtx.sampleRate);
+		const wData = wBuf.getChannelData(0);
+		for (let i = 0; i < wLen; i++) wData[i] = Math.random() * 2 - 1;
 
-	function makeWind() {
-		if (!master) return;
-		const g = ctx.createGain();
-		g.gain.setValueAtTime(0, ctx.currentTime);
-		const len = ctx.sampleRate * 4;
-		const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-		const d = buf.getChannelData(0);
-		for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-
-		const src = ctx.createBufferSource();
-		src.buffer = buf;
+		const src = activeCtx.createBufferSource();
+		src.buffer = wBuf;
 		src.loop = true;
 
-		const f1 = ctx.createBiquadFilter();
+		const f1 = activeCtx.createBiquadFilter();
 		f1.type = "bandpass";
-		f1.frequency.setValueAtTime(260, ctx.currentTime);
-		f1.Q.setValueAtTime(0.4, ctx.currentTime);
+		f1.frequency.setValueAtTime(260, activeCtx.currentTime);
+		f1.Q.setValueAtTime(0.4, activeCtx.currentTime);
 
-		const f2 = ctx.createBiquadFilter();
+		const f2 = activeCtx.createBiquadFilter();
 		f2.type = "bandpass";
-		f2.frequency.setValueAtTime(480, ctx.currentTime);
-		f2.Q.setValueAtTime(0.3, ctx.currentTime);
+		f2.frequency.setValueAtTime(480, activeCtx.currentTime);
+		f2.Q.setValueAtTime(0.3, activeCtx.currentTime);
 
-		const rev = mkRev(6, 2.2);
-		const rG = ctx.createGain();
-		rG.gain.setValueAtTime(0.75, ctx.currentTime);
+		const revWind = mkRev(6, 2.2);
+		const rGWind = activeCtx.createGain();
+		rGWind.gain.setValueAtTime(0.75, activeCtx.currentTime);
 
 		src.connect(f1);
-		f1.connect(g);
+		f1.connect(gWind);
 		src.connect(f2);
-		f2.connect(g);
-		g.connect(rev);
-		rev.connect(rG);
-		rG.connect(master);
+		f2.connect(gWind);
+		gWind.connect(revWind);
+		revWind.connect(rGWind);
+		rGWind.connect(master);
 
-		g.gain.linearRampToValueAtTime(state.wind ? 0.05 : 0, ctx.currentTime + 9);
+		gWind.gain.linearRampToValueAtTime(0.05, activeCtx.currentTime + 9);
 		src.start();
+		nodes.push(src);
 
-		nodes.wind = { gain: g, src };
-	}
+		// --- Owl ---
+		function fireOwl() {
+			if (!playing || !master || !activeCtx) return;
+			const now = activeCtx.currentTime;
+			const base = 170 + Math.random() * 50;
+			const rev = mkRev(4, 2.4);
+			const rG = activeCtx.createGain();
+			rG.gain.setValueAtTime(0.85, now);
+			rev.connect(rG);
+			rG.connect(master);
 
-	function fireOwl() {
-		if (!playing || !state.owl || !master) return;
-		const now = ctx.currentTime;
-		const base = 170 + Math.random() * 50;
-		const rev = mkRev(4, 2.4);
-		const rG = ctx.createGain();
-		rG.gain.setValueAtTime(0.85, now);
-		rev.connect(rG);
-		rG.connect(master);
+			[0, 0.88].forEach((offset, hi) => {
+				if (!activeCtx) return;
+				const t = now + offset;
+				const env = activeCtx.createGain();
+				env.gain.setValueAtTime(0, t);
+				env.gain.linearRampToValueAtTime(0.085, t + 0.2);
+				env.gain.setValueAtTime(0.085, t + 0.52);
+				env.gain.linearRampToValueAtTime(0, t + 1.1);
 
-		[0, 0.88].forEach((offset, hi) => {
-			const t = now + offset;
-			const env = ctx.createGain();
-			env.gain.setValueAtTime(0, t);
-			env.gain.linearRampToValueAtTime(0.085, t + 0.2);
-			env.gain.setValueAtTime(0.085, t + 0.52);
-			env.gain.linearRampToValueAtTime(0, t + 1.1);
+				[1, 1.99, 3.02].forEach((ratio, j) => {
+					if (!activeCtx) return;
+					const o = activeCtx.createOscillator();
+					o.type = "sine";
+					const f = base * (hi ? 0.87 : 1) * ratio;
+					o.frequency.setValueAtTime(f * 1.04, t);
+					o.frequency.linearRampToValueAtTime(f * (hi ? 0.9 : 0.96), t + 1.1);
 
-			[1, 1.99, 3.02].forEach((ratio, j) => {
-				const o = ctx.createOscillator();
+					const hG = activeCtx.createGain();
+					hG.gain.setValueAtTime([1, 0.1, 0.035][j], t);
+
+					const filt = activeCtx.createBiquadFilter();
+					filt.type = "lowpass";
+					filt.frequency.setValueAtTime(580, t);
+					filt.Q.setValueAtTime(3.5, t);
+
+					o.connect(filt);
+					filt.connect(hG);
+					hG.connect(env);
+					env.connect(rev);
+					env.connect(master!);
+
+					o.start(t);
+					o.stop(t + 1.25);
+					nodes.push(o);
+				});
+			});
+
+			owlTimer = setTimeout(fireOwl, 12000 + Math.random() * 13000);
+		}
+
+		// --- Crystal ---
+		function fireCrystal() {
+			if (!playing || !master || !activeCtx) return;
+			const now = activeCtx.currentTime;
+			const scale = [261.6, 293.7, 329.6, 369.9, 415.3, 466.2, 523.3, 587.3];
+			const note = scale[Math.floor(Math.random() * scale.length)];
+			const rev = mkRev(7, 1.3);
+			const rG = activeCtx.createGain();
+			rG.gain.setValueAtTime(0.9, now);
+			rev.connect(rG);
+			rG.connect(master);
+
+			[1, 2, 3].forEach((ratio, i) => {
+				if (!activeCtx) return;
+				const o = activeCtx.createOscillator();
 				o.type = "sine";
-				const f = base * (hi ? 0.87 : 1) * ratio;
-				o.frequency.setValueAtTime(f * 1.04, t);
-				o.frequency.linearRampToValueAtTime(f * (hi ? 0.9 : 0.96), t + 1.1);
+				o.frequency.setValueAtTime(note * ratio, now);
 
-				const hG = ctx.createGain();
-				hG.gain.setValueAtTime([1, 0.1, 0.035][j], t);
+				const env = activeCtx.createGain();
+				const vol = [0.065, 0.022, 0.007][i];
+				env.gain.setValueAtTime(0, now);
+				env.gain.linearRampToValueAtTime(vol, now + 0.012);
+				env.gain.exponentialRampToValueAtTime(0.0001, now + 5.5 + i * 1.8);
 
-				const filt = ctx.createBiquadFilter();
-				filt.type = "lowpass";
-				filt.frequency.setValueAtTime(580, t);
-				filt.Q.setValueAtTime(3.5, t);
-
-				o.connect(filt);
-				filt.connect(hG);
-				hG.connect(env);
+				o.connect(env);
 				env.connect(rev);
 				env.connect(master!);
 
-				o.start(t);
-				o.stop(t + 1.25);
+				o.start(now);
+				o.stop(now + 8);
+				nodes.push(o);
 			});
-		});
 
-		owlTimer = setTimeout(fireOwl, 12000 + Math.random() * 13000);
+			crystalTimer = setTimeout(fireCrystal, 9000 + Math.random() * 11000);
+		}
+
+		setTimeout(fireOwl, 6000);
+		setTimeout(fireCrystal, 4000);
 	}
 
-	function fireCrystal() {
-		if (!playing || !state.crystal || !master) return;
-		const now = ctx.currentTime;
-		const scale = [261.6, 293.7, 329.6, 369.9, 415.3, 466.2, 523.3, 587.3];
-		const note = scale[Math.floor(Math.random() * scale.length)];
-		const rev = mkRev(7, 1.3);
-		const rG = ctx.createGain();
-		rG.gain.setValueAtTime(0.9, now);
-		rev.connect(rG);
-		rG.connect(master);
-
-		[1, 2, 3].forEach((ratio, i) => {
-			const o = ctx.createOscillator();
-			o.type = "sine";
-			o.frequency.setValueAtTime(note * ratio, now);
-
-			const env = ctx.createGain();
-			const vol = [0.065, 0.022, 0.007][i];
-			env.gain.setValueAtTime(0, now);
-			env.gain.linearRampToValueAtTime(vol, now + 0.012);
-			env.gain.exponentialRampToValueAtTime(0.0001, now + 5.5 + i * 1.8);
-
-			o.connect(env);
-			env.connect(rev);
-			env.connect(master!);
-
-			o.start(now);
-			o.stop(now + 8);
-		});
-
-		crystalTimer = setTimeout(fireCrystal, 9000 + Math.random() * 11000);
-	}
-
-	const controller: SoundscapeController = {
-		start: () => {
+	const controller: AudioController = {
+		play() {
 			if (playing) return;
+
+			if (!activeCtx && typeof window !== "undefined") {
+				const AC =
+					(window as any).AudioContext ?? (window as any).webkitAudioContext;
+				activeCtx = new AC();
+			}
+
+			if (!activeCtx) return;
+
 			playing = true;
+			notify(false);
 
-			analyser = ctx.createAnalyser();
-			analyser.fftSize = 2048;
-			analyser.smoothingTimeConstant = 0.93;
+			if (activeCtx.state === "suspended") {
+				const unlockEvents = [
+					"click",
+					"touchstart",
+					"pointerdown",
+					"mousemove",
+					"scroll",
+					"keydown",
+				] as const;
 
-			master = ctx.createGain();
-			master.gain.setValueAtTime(0, ctx.currentTime);
-			master.connect(analyser);
-			analyser.connect(ctx.destination);
+				const unlock = async () => {
+					if (activeCtx?.state === "suspended") {
+						await activeCtx.resume().catch(() => {});
+					}
 
-			master.gain.linearRampToValueAtTime(0.65, ctx.currentTime + 5);
-
-			makeBreath();
-			makeWind();
-			setTimeout(fireOwl, 6000);
-			setTimeout(fireCrystal, 4000);
+					if (playing) startAudio();
+					unlockEvents.forEach((evt) => {
+						window.removeEventListener(evt, unlock);
+					});
+				};
+				unlockEvents.forEach((evt) => {
+					window.addEventListener(evt, unlock, { once: true });
+				});
+			} else {
+				startAudio();
+			}
 		},
-		stop: () => {
+
+		pause() {
 			if (!playing) return;
 			playing = false;
+			notify(true);
 
 			if (owlTimer) clearTimeout(owlTimer);
 			if (crystalTimer) clearTimeout(crystalTimer);
 
-			if (master) {
-				master.gain.cancelScheduledValues(ctx.currentTime);
-				master.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.5);
+			if (master && activeCtx) {
+				master.gain.cancelScheduledValues(activeCtx.currentTime);
+				master.gain.linearRampToValueAtTime(0, activeCtx.currentTime + 2.5);
 			}
 
-			Object.values(nodes).forEach((n) => {
-				if (n.oscs)
-					n.oscs.forEach((o) => {
-						try {
-							if (o instanceof OscillatorNode) o.stop(ctx.currentTime + 3);
-						} catch (_e) {}
-					});
-				if (n.src)
-					try {
-						n.src.stop(ctx.currentTime + 3);
-					} catch (_e) {}
+			nodes.forEach((n) => {
+				try {
+					if (n.stop && activeCtx) n.stop(activeCtx.currentTime + 3);
+				} catch (_) {}
 			});
 
-			// Clean up after fade
 			setTimeout(() => {
-				Object.keys(nodes).forEach((k) => delete nodes[k]);
+				nodes.length = 0;
 			}, 3000);
 		},
-		setVolume: (v: number) => {
-			if (master)
-				master.gain.linearRampToValueAtTime(v / 100, ctx.currentTime + 0.15);
-		},
-		toggleLayer: (name: keyof SoundscapeState, enabled: boolean) => {
-			state[name] = enabled;
-			if (!playing || !nodes[name]) return;
 
-			const targets = { breath: 0.2, wind: 0.05, owl: 0, crystal: 0 };
-			const t = enabled ? targets[name as keyof typeof targets] : 0;
-
-			if (nodes[name].gain) {
-				nodes[name].gain.gain.linearRampToValueAtTime(t, ctx.currentTime + 2.5);
-			}
+		onPause(cb) {
+			listeners.add(cb);
+			return () => listeners.delete(cb);
 		},
-		getAnalyser: () => analyser,
+
+		get ctx() {
+			return activeCtx;
+		},
+
+		get paused() {
+			return !playing;
+		},
 	};
 
 	return controller;
-}
-
-/**
- * Individual Sound Effects (One-shots)
- */
-
-export function playHayaHoot(ctx: AudioContext, destination: AudioNode) {
-	const now = ctx.currentTime;
-	const base = 170 + Math.random() * 50;
-	const _rev = ctx.createConvolver(); // Simplified for one-shot or reuse
-	const env = ctx.createGain();
-	env.gain.setValueAtTime(0, now);
-	env.gain.linearRampToValueAtTime(0.08, now + 0.2);
-	env.gain.setValueAtTime(0.08, now + 0.52);
-	env.gain.linearRampToValueAtTime(0, now + 1.1);
-
-	[1, 1.99].forEach((ratio) => {
-		const o = ctx.createOscillator();
-		o.type = "sine";
-		o.frequency.setValueAtTime(base * ratio * 1.04, now);
-		o.frequency.linearRampToValueAtTime(base * ratio * 0.96, now + 1.1);
-		o.connect(env);
-		o.start(now);
-		o.stop(now + 1.25);
-	});
-
-	env.connect(destination);
-}
-
-export function playHayaCrystal(ctx: AudioContext, destination: AudioNode) {
-	const now = ctx.currentTime;
-	const scale = [261.6, 329.6, 392.0, 523.3, 659.3];
-	const note = scale[Math.floor(Math.random() * scale.length)];
-
-	const o = ctx.createOscillator();
-	o.type = "sine";
-	o.frequency.setValueAtTime(note, now);
-
-	const env = ctx.createGain();
-	env.gain.setValueAtTime(0, now);
-	env.gain.linearRampToValueAtTime(0.05, now + 0.01);
-	env.gain.exponentialRampToValueAtTime(0.0001, now + 4);
-
-	o.connect(env);
-	env.connect(destination);
-	o.start(now);
-	o.stop(now + 4.1);
-}
-
-export function playUIWhoosh(ctx: AudioContext, destination: AudioNode) {
-	const now = ctx.currentTime;
-	const o = ctx.createOscillator();
-	const g = ctx.createGain();
-	o.type = "sine";
-	o.frequency.setValueAtTime(100, now);
-	o.frequency.exponentialRampToValueAtTime(1000, now + 0.2);
-	g.gain.setValueAtTime(0, now);
-	g.gain.linearRampToValueAtTime(0.1, now + 0.05);
-	g.gain.linearRampToValueAtTime(0, now + 0.2);
-	o.connect(g);
-	g.connect(destination);
-	o.start(now);
-	o.stop(now + 0.2);
-}
-
-export function playUIClick(ctx: AudioContext, destination: AudioNode) {
-	const now = ctx.currentTime;
-	const o = ctx.createOscillator();
-	const g = ctx.createGain();
-	o.type = "square";
-	o.frequency.setValueAtTime(150, now);
-	o.frequency.exponentialRampToValueAtTime(50, now + 0.05);
-	g.gain.setValueAtTime(0, now);
-	g.gain.linearRampToValueAtTime(0.05, now + 0.005);
-	g.gain.linearRampToValueAtTime(0, now + 0.05);
-	o.connect(g);
-	g.connect(destination);
-	o.start(now);
-	o.stop(now + 0.05);
 }
