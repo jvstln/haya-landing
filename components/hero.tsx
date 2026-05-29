@@ -109,7 +109,7 @@ export function Hero() {
 				<h1
 					className="font-inter text-balance mb-4 leading-none tracking-tight gsap-reveal"
 					style={{
-						fontSize: "clamp(48px, 7vw, 92px)",
+						fontSize: "clamp(48px, 7vw, 70px)",
 					}}
 				>
 					The Product Behavioral
