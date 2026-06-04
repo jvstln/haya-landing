@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	// Add other config options here if needed
-	transpilePackages: ['@tryhaya/analytics'],
+	transpilePackages: ["@tryhaya/analytics"],
 };
 
 export default nextConfig;

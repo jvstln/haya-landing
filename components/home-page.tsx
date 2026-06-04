@@ -2,12 +2,11 @@
 import { gsap, useGSAP } from "@workspace/ui/lib/gsap.util";
 import React from "react";
 import { Bento } from "./bento";
-import { CTA, Footer } from "./footer";
+import { Footer } from "./footer";
 import { Hero } from "./hero";
 import { LogoPlay } from "./logo";
 import { Nav } from "./nav";
 import { Steps } from "./steps";
-import { TryHaya } from "./try-haya";
 
 export function HomePage() {
 	const container = React.useRef(null);
@@ -34,7 +33,7 @@ export function HomePage() {
 				<Bento />
 				{/* <TryHaya /> */}
 				<Steps />
-				<CTA />
+				{/* <CTA /> */}
 				<Footer />
 			</div>
 			<div className="floating-owl fixed bottom-10 right-10 z-60 gsap-reveal">

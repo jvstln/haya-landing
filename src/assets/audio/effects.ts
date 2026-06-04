@@ -1,15 +1,20 @@
+"use client";
+
 export interface AudioController {
 	play: () => void;
 	pause: () => void;
 	onPause: (cb: (paused: boolean) => void) => () => void;
 	paused: boolean;
 	ctx: AudioContext | null;
+	destroy: () => void;
 }
 
 type Timer = ReturnType<typeof setTimeout> | null;
 
-export function audioEffectPlayer(ctx?: AudioContext): AudioController {
-	let activeCtx: AudioContext | null = ctx ?? null;
+export function audioEffectPlayer(
+	window: Window & typeof globalThis,
+): AudioController {
+	let activeCtx: AudioContext | null = null;
 	let master: GainNode | null = null;
 	let playing = false;
 
@@ -20,6 +25,25 @@ export function audioEffectPlayer(ctx?: AudioContext): AudioController {
 		[];
 
 	const listeners = new Set<(paused: boolean) => void>();
+
+	let unlockHandler: (() => void) | null = null;
+	const unlockEvents = [
+		"click",
+		"touchstart",
+		"pointerdown",
+		"mousemove",
+		"scroll",
+		"keydown",
+	] as const;
+
+	function cleanupUnlock() {
+		if (unlockHandler) {
+			for (const evt of unlockEvents) {
+				window.removeEventListener(evt, unlockHandler);
+			}
+			unlockHandler = null;
+		}
+	}
 	const notify = (paused: boolean) =>
 		listeners.forEach((l) => {
 			l(paused);
@@ -241,9 +265,8 @@ export function audioEffectPlayer(ctx?: AudioContext): AudioController {
 		play() {
 			if (playing) return;
 
-			if (!activeCtx && typeof window !== "undefined") {
-				const AC =
-					(window as any).AudioContext ?? (window as any).webkitAudioContext;
+			if (!activeCtx) {
+				const AC = window.AudioContext;
 				activeCtx = new AC();
 			}
 
@@ -253,28 +276,19 @@ export function audioEffectPlayer(ctx?: AudioContext): AudioController {
 			notify(false);
 
 			if (activeCtx.state === "suspended") {
-				const unlockEvents = [
-					"click",
-					"touchstart",
-					"pointerdown",
-					"mousemove",
-					"scroll",
-					"keydown",
-				] as const;
-
+				cleanupUnlock();
 				const unlock = async () => {
 					if (activeCtx?.state === "suspended") {
 						await activeCtx.resume().catch(() => {});
 					}
 
 					if (playing) startAudio();
-					unlockEvents.forEach((evt) => {
-						window.removeEventListener(evt, unlock);
-					});
+					cleanupUnlock();
 				};
-				unlockEvents.forEach((evt) => {
+				unlockHandler = unlock;
+				for (const evt of unlockEvents) {
 					window.addEventListener(evt, unlock, { once: true });
-				});
+				}
 			} else {
 				startAudio();
 			}
@@ -307,6 +321,29 @@ export function audioEffectPlayer(ctx?: AudioContext): AudioController {
 		onPause(cb) {
 			listeners.add(cb);
 			return () => listeners.delete(cb);
+		},
+
+		destroy() {
+			playing = false;
+			if (owlTimer) clearTimeout(owlTimer);
+			if (crystalTimer) clearTimeout(crystalTimer);
+			cleanupUnlock();
+
+			for (const n of nodes) {
+				try {
+					if (n.stop) n.stop();
+				} catch (_) {}
+				try {
+					if (n.disconnect) n.disconnect();
+				} catch (_) {}
+			}
+			nodes.length = 0;
+
+			if (activeCtx) {
+				activeCtx.close().catch(() => {});
+				activeCtx = null;
+			}
+			listeners.clear();
 		},
 
 		get ctx() {

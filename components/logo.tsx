@@ -19,7 +19,7 @@ export const Logo = ({
 
 	// Autoplay on page load
 	useEffect(() => {
-		play();
+		play?.();
 	}, [play]);
 
 	useGSAP(
