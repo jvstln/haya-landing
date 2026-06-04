@@ -17,12 +17,12 @@ export function Hero() {
 			// Split the h1 into lines for a beautiful staggered entrance
 			const splitTitle = new SplitText("h1", {
 				type: "lines",
-				linesClass: "overflow-hidden",
+				// linesClass: "overflow-hidden",
 			});
 
 			const splitTag = new SplitText(".tag", {
 				type: "lines",
-				linesClass: "overflow-hidden",
+				// linesClass: "overflow-hidden",
 			});
 
 			const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
@@ -107,14 +107,14 @@ export function Hero() {
 					PRIVATE BETA · INVITE ONLY
 				</div>
 				<h1
-					className="font-inter text-balance mb-4 leading-none tracking-tight gsap-reveal"
+					className="font-inter text-balance mb-4 font-bold leading-none tracking-tight gsap-reveal"
 					style={{
-						fontSize: "clamp(48px, 7vw, 70px)",
+						fontSize: "clamp(48px, 7vw, 56px)",
 					}}
 				>
 					The Product Behavioral
 					<br />
-					<em className="inline-block">Intelligence Layer</em>
+					<em>Intelligence Layer</em>
 				</h1>
 				<p className="tag gsap-reveal">
 					Haya runs two silent agents inside your product one tracks every user
