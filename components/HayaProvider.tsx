@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export function HayaProvider() {
 	useEffect(() => {
-		haya.init("2a22fdb9-e8cb-4a54-8ce8-995885b2a6cb", {
+		haya.init("c5b9cdc8-987d-45ac-a2c2-35197619cb94", {
 			sessionReplay: true,
 			heatmaps: true,
 			autoTrack: { clicks: true, scrolls: true, pageviews: true },
